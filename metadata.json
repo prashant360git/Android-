@@ -1,0 +1,6 @@
+{
+  "name": "TradePulse",
+  "description": "Professional Trading Journal & Execution Analytics with P&L tracking, execution psychology, playbooks, and weekly AI reports.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

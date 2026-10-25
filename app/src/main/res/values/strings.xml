@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">TradePulse</string>
+    <string name="nav_dashboard">Dashboard</string>
+    <string name="nav_trades">Trades</string>
+    <string name="nav_analytics">Analytics</string>
+    <string name="nav_playbooks">Playbooks</string>
+    <string name="nav_backtesting">Backtesting</string>
+    <string name="nav_reports">AI Reports</string>
+    <string name="net_pnl">Net P&amp;L</string>
+    <string name="win_rate">Win Rate</string>
+    <string name="profit_factor">Profit Factor</string>
+    <string name="total_trades">Total Trades</string>
+    <string name="expectancy">Expectancy</string>
+    <string name="max_drawdown">Max Drawdown</string>
+    <string name="equity_curve">Cumulative Equity Growth</string>
+    <string name="calendar_view">Execution Calendar</string>
+    <string name="log_trade">Log Trade</string>
+    <string name="sync_broker">Sync Broker</string>
+    <string name="daily_journal">Daily Journal</string>
+    <string name="generate_report">Generate Weekly AI Audit</string>
+</resources>
