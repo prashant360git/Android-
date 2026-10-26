@@ -2,6 +2,7 @@ package com.example.tradepulse.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -33,6 +34,7 @@ fun TradeLogScreen(
     trades: List<Trade>,
     onEditTrade: (Trade) -> Unit,
     onDeleteTrade: (String) -> Unit,
+    onRemoveAllTrades: () -> Unit,
     onAddNewTrade: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -169,7 +171,7 @@ fun TradeLogScreen(
                 }
             }
 
-            // Results count and Net P&L Summary Bar
+            // Results count, Net P&L Summary Bar, and Remove All Entries Action
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -180,12 +182,48 @@ fun TradeLogScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(
-                    text = "${filteredTrades.size} Trades found",
-                    color = TextSecondary,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "${filteredTrades.size} Trades found",
+                        color = TextSecondary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+
+                    if (trades.isNotEmpty()) {
+                        Surface(
+                            color = LossRedSoft,
+                            shape = RoundedCornerShape(4.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, LossRed.copy(alpha = 0.5f)),
+                            modifier = Modifier
+                                .clickable { onRemoveAllTrades() }
+                                .testTag("remove_all_entries_button")
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.DeleteSweep,
+                                    contentDescription = "Remove All Entries",
+                                    tint = LossRedLight,
+                                    modifier = Modifier.size(13.dp)
+                                )
+                                Spacer(modifier = Modifier.width(3.dp))
+                                Text(
+                                    text = "Remove All",
+                                    color = LossRedLight,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+                }
+
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)

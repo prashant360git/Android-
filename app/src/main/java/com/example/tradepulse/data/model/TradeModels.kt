@@ -2,11 +2,13 @@ package com.example.tradepulse.data.model
 
 import kotlinx.serialization.Serializable
 
+@Serializable
 enum class TradeSide {
     LONG,
     SHORT
 }
 
+@Serializable
 enum class AssetClass {
     STOCKS,
     OPTIONS,
@@ -15,6 +17,7 @@ enum class AssetClass {
     CRYPTO
 }
 
+@Serializable
 enum class PreTradeEmotion {
     CALM,
     CONFIDENT,
@@ -26,6 +29,7 @@ enum class PreTradeEmotion {
     IMPULSIVE
 }
 
+@Serializable
 enum class PostTradeEmotion {
     SATISFIED,
     DISCIPLINED,
@@ -118,6 +122,7 @@ data class AccountStats(
     val followedPlanRate: Double = 0.0
 )
 
+@Serializable
 data class BrokerConnection(
     val id: String,
     val name: String,
@@ -126,7 +131,35 @@ data class BrokerConnection(
     val lastSynced: String? = null,
     val accountNumber: String? = null,
     val autoSyncEnabled: Boolean = true,
-    val syncInterval: String = "15m"
+    val syncInterval: String = "15m", // 5m, 15m, 1h, eod
+    val targetAccount: String = "Main Account"
+)
+
+@Serializable
+data class UserProfile(
+    val uid: String,
+    val email: String,
+    val displayName: String,
+    val photoUrl: String? = null,
+    val authProvider: String = "GOOGLE", // "GOOGLE" or "EMAIL"
+    val isDriveSyncEnabled: Boolean = true,
+    val lastDriveBackupTime: String? = null,
+    val driveFolderName: String = "TradePulse_Backups",
+    val isAutoSyncEnabled: Boolean = true
+)
+
+@Serializable
+data class GoogleDriveBackup(
+    val version: Int = 1,
+    val backupTimestamp: String,
+    val appVersion: String = "1.0",
+    val userEmail: String,
+    val totalTrades: Int,
+    val trades: List<Trade> = emptyList(),
+    val accounts: List<String> = emptyList(),
+    val playbooks: List<PlaybookStrategy> = emptyList(),
+    val backtestTrades: List<BacktestTrade> = emptyList(),
+    val dailyEntries: List<DailyJournalEntry> = emptyList()
 )
 
 data class WeeklyReportData(
@@ -141,6 +174,7 @@ data class WeeklyReportData(
     val grade: String = "B+"
 )
 
+@Serializable
 data class TradingJournal(
     val id: String,
     val name: String,
@@ -151,6 +185,7 @@ data class TradingJournal(
     val createdAt: String
 )
 
+@Serializable
 data class DailyJournalEntry(
     val id: String,
     val date: String, // YYYY-MM-DD
@@ -164,6 +199,7 @@ data class DailyJournalEntry(
     val updatedAt: String? = null
 )
 
+@Serializable
 enum class PlaybookCategory {
     BREAKOUT,
     PULLBACK,
@@ -173,6 +209,7 @@ enum class PlaybookCategory {
     CATALYST_NEWS
 }
 
+@Serializable
 data class PlaybookStrategy(
     val id: String,
     val title: String,
@@ -189,6 +226,7 @@ data class PlaybookStrategy(
     val createdAt: String
 )
 
+@Serializable
 data class BacktestTrade(
     val id: String,
     val symbol: String,

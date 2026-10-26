@@ -1,8 +1,12 @@
 package com.example.tradepulse.ui.screens
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -28,6 +32,7 @@ fun DashboardScreen(
     onSelectDay: (DaySummary) -> Unit,
     onEditTrade: (Trade) -> Unit,
     onDeleteTrade: (String) -> Unit,
+    onRemoveAllTrades: (() -> Unit)? = null,
     onViewAllTrades: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -140,25 +145,72 @@ fun DashboardScreen(
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 0.5.sp
                 )
-                TextButton(onClick = onViewAllTrades) {
-                    Text(
-                        text = "View All (${trades.size})",
-                        color = ElectricCyan,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (trades.isNotEmpty() && onRemoveAllTrades != null) {
+                        TextButton(
+                            onClick = onRemoveAllTrades,
+                            modifier = Modifier.testTag("dashboard_clear_all_button")
+                        ) {
+                            Text(
+                                text = "Clear All",
+                                color = LossRedLight,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                    TextButton(onClick = onViewAllTrades) {
+                        Text(
+                            text = "View All (${trades.size})",
+                            color = ElectricCyan,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
                 }
             }
         }
 
         // Display up to 4 most recent trades
         val recentTrades = trades.sortedByDescending { it.entryDate }.take(4)
-        items(recentTrades, key = { it.id }) { trade ->
-            TradeItemCard(
-                trade = trade,
-                onEdit = { onEditTrade(trade) },
-                onDelete = { onDeleteTrade(trade.id) }
-            )
+        if (recentTrades.isEmpty()) {
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(CardBackground)
+                        .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
+                        .padding(24.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ReceiptLong,
+                            contentDescription = null,
+                            tint = TextTertiary,
+                            modifier = Modifier.size(36.dp)
+                        )
+                        Text(
+                            text = "Workspace is clean. No executions logged yet.",
+                            color = TextSecondary,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
+        } else {
+            items(recentTrades, key = { it.id }) { trade ->
+                TradeItemCard(
+                    trade = trade,
+                    onEdit = { onEditTrade(trade) },
+                    onDelete = { onDeleteTrade(trade.id) }
+                )
+            }
         }
     }
 }

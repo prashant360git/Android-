@@ -125,19 +125,64 @@ fun BacktestingScreen(
             )
         }
 
-        items(backtestTrades, key = { it.id }) { bt ->
-            val pnl = bt.realizedPnL ?: 0.0
-            val isWin = pnl > 0
+        if (backtestTrades.isEmpty()) {
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(CardBackground)
+                        .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
+                        .padding(28.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Science,
+                            contentDescription = null,
+                            tint = TextTertiary,
+                            modifier = Modifier.size(36.dp)
+                        )
+                        Text(
+                            text = "No Replay Sessions Recorded",
+                            color = TextPrimary,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Forward test your strategy rules against historical market conditions to measure win rate and discipline obedience.",
+                            color = TextSecondary,
+                            fontSize = 12.sp,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Button(
+                            onClick = onAddBacktestTrade,
+                            colors = ButtonDefaults.buttonColors(containerColor = BrandIndigo),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text("Start Replay Session", color = Color.White, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+        } else {
+            items(backtestTrades, key = { it.id }) { bt ->
+                val pnl = bt.realizedPnL ?: 0.0
+                val isWin = pnl > 0
 
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("backtest_card_${bt.id}")
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(CardBackground)
-                    .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
-                    .padding(14.dp)
-            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("backtest_card_${bt.id}")
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(CardBackground)
+                        .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
+                        .padding(14.dp)
+                ) {
                 Column {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -251,3 +296,5 @@ fun BacktestingScreen(
         }
     }
 }
+}
+

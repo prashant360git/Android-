@@ -36,7 +36,8 @@ fun EditTradeDialog(
     initialPlaybook: PlaybookStrategy?,
     accounts: List<String>,
     onDismiss: () -> Unit,
-    onSave: (Trade) -> Unit
+    onSave: (Trade) -> Unit,
+    onDelete: ((String) -> Unit)? = null
 ) {
     var symbol by remember { mutableStateOf(trade?.symbol ?: "") }
     var side by remember { mutableStateOf(trade?.side ?: TradeSide.LONG) }
@@ -395,56 +396,81 @@ fun EditTradeDialog(
                 // Action Buttons
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
+                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    TextButton(onClick = onDismiss) {
-                        Text("Cancel", color = TextSecondary)
+                    if (trade != null && onDelete != null) {
+                        TextButton(
+                            onClick = {
+                                onDelete(trade.id)
+                                onDismiss()
+                            },
+                            colors = ButtonDefaults.textButtonColors(contentColor = LossRedLight),
+                            modifier = Modifier.testTag("dialog_delete_trade_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.DeleteOutline,
+                                contentDescription = "Delete",
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Remove Entry", fontWeight = FontWeight.SemiBold)
+                        }
+                    } else {
+                        Spacer(modifier = Modifier.width(1.dp))
                     }
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Button(
-                        onClick = {
-                            if (symbol.isNotBlank() && entryPrice > 0 && exitPrice > 0) {
-                                val now = defaultDate?.let { "${it}T10:00:00.000Z" } ?: SimpleDateFormat(
-                                    "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
-                                    Locale.US
-                                ).apply {
-                                    timeZone = TimeZone.getTimeZone("UTC")
-                                }.format(Date())
 
-                                val updatedTrade = Trade(
-                                    id = trade?.id ?: "tr-${System.currentTimeMillis()}",
-                                    symbol = symbol.trim(),
-                                    side = side,
-                                    assetClass = assetClass,
-                                    entryDate = trade?.entryDate ?: now,
-                                    exitDate = trade?.exitDate ?: now,
-                                    entryPrice = entryPrice,
-                                    exitPrice = exitPrice,
-                                    quantity = quantity,
-                                    commission = commission,
-                                    netPnL = (calculatedNetPnL * 100.0).toInt() / 100.0,
-                                    pnlPercent = (calculatedPct * 100.0).toInt() / 100.0,
-                                    rMultiple = if (trade?.rMultiple != null && trade.rMultiple != 0.0) trade.rMultiple else if (calculatedNetPnL > 0) 2.0 else -1.0,
-                                    setup = setup.trim(),
-                                    preEmotion = preEmotion,
-                                    postEmotion = postEmotion,
-                                    disciplineScore = disciplineScore,
-                                    followedPlan = followedPlan,
-                                    mistakes = selectedMistakes.toList(),
-                                    notes = notes.trim(),
-                                    account = account,
-                                    playbookId = initialPlaybook?.id ?: trade?.playbookId,
-                                    playbookTitle = initialPlaybook?.title ?: trade?.playbookTitle
-                                )
-                                onSave(updatedTrade)
-                            }
-                        },
-                        modifier = Modifier.testTag("save_trade_button"),
-                        colors = ButtonDefaults.buttonColors(containerColor = BrandIndigo),
-                        enabled = symbol.isNotBlank() && entryPrice > 0 && exitPrice > 0
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Save Trade", color = Color.White, fontWeight = FontWeight.Bold)
+                        TextButton(onClick = onDismiss) {
+                            Text("Cancel", color = TextSecondary)
+                        }
+                        Button(
+                            onClick = {
+                                if (symbol.isNotBlank() && entryPrice > 0 && exitPrice > 0) {
+                                    val now = defaultDate?.let { "${it}T10:00:00.000Z" } ?: SimpleDateFormat(
+                                        "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+                                        Locale.US
+                                    ).apply {
+                                        timeZone = TimeZone.getTimeZone("UTC")
+                                    }.format(Date())
+
+                                    val updatedTrade = Trade(
+                                        id = trade?.id ?: "tr-${System.currentTimeMillis()}",
+                                        symbol = symbol.trim(),
+                                        side = side,
+                                        assetClass = assetClass,
+                                        entryDate = trade?.entryDate ?: now,
+                                        exitDate = trade?.exitDate ?: now,
+                                        entryPrice = entryPrice,
+                                        exitPrice = exitPrice,
+                                        quantity = quantity,
+                                        commission = commission,
+                                        netPnL = (calculatedNetPnL * 100.0).toInt() / 100.0,
+                                        pnlPercent = (calculatedPct * 100.0).toInt() / 100.0,
+                                        rMultiple = if (trade?.rMultiple != null && trade.rMultiple != 0.0) trade.rMultiple else if (calculatedNetPnL > 0) 2.0 else -1.0,
+                                        setup = setup.trim(),
+                                        preEmotion = preEmotion,
+                                        postEmotion = postEmotion,
+                                        disciplineScore = disciplineScore,
+                                        followedPlan = followedPlan,
+                                        mistakes = selectedMistakes.toList(),
+                                        notes = notes.trim(),
+                                        account = account,
+                                        playbookId = initialPlaybook?.id ?: trade?.playbookId,
+                                        playbookTitle = initialPlaybook?.title ?: trade?.playbookTitle
+                                    )
+                                    onSave(updatedTrade)
+                                }
+                            },
+                            modifier = Modifier.testTag("save_trade_button"),
+                            colors = ButtonDefaults.buttonColors(containerColor = BrandIndigo),
+                            enabled = symbol.isNotBlank() && entryPrice > 0 && exitPrice > 0
+                        ) {
+                            Text("Save Trade", color = Color.White, fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
             }

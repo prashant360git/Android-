@@ -114,75 +114,95 @@ fun AnalyticsScreen(
             }
         }
 
-        items(emotionalBreakdown, key = { it.emotion.name }) { item ->
-            val isAlpha = item.netPnL > 0
-            val isLeak = item.netPnL < 0
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("emotion_card_${item.emotion.name}")
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(CardBackground)
-                    .border(
-                        1.dp,
-                        if (isAlpha) ProfitGreen.copy(alpha = 0.3f) else if (isLeak) LossRed.copy(alpha = 0.3f) else CardBorder,
-                        RoundedCornerShape(10.dp)
-                    )
-                    .padding(12.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+        if (emotionalBreakdown.isEmpty()) {
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(CardBackground)
+                        .border(1.dp, CardBorder, RoundedCornerShape(10.dp))
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Column {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Text(
-                                text = item.emotion.name,
-                                color = TextPrimary,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .background(if (isAlpha) ProfitGreenSoft else if (isLeak) LossRedSoft else Navy850)
-                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                    Text(
+                        text = "No emotional data recorded yet. Tag mindset when logging trades.",
+                        color = TextSecondary,
+                        fontSize = 12.sp
+                    )
+                }
+            }
+        } else {
+            items(emotionalBreakdown, key = { it.emotion.name }) { item ->
+                val isAlpha = item.netPnL > 0
+                val isLeak = item.netPnL < 0
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("emotion_card_${item.emotion.name}")
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(CardBackground)
+                        .border(
+                            1.dp,
+                            if (isAlpha) ProfitGreen.copy(alpha = 0.3f) else if (isLeak) LossRed.copy(alpha = 0.3f) else CardBorder,
+                            RoundedCornerShape(10.dp)
+                        )
+                        .padding(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
                                 Text(
-                                    text = if (isAlpha) "Edge State" else if (isLeak) "Capital Leak" else "Neutral",
-                                    color = if (isAlpha) ProfitGreenLight else if (isLeak) LossRedLight else TextSecondary,
-                                    fontSize = 9.sp,
+                                    text = item.emotion.name,
+                                    color = TextPrimary,
+                                    fontSize = 14.sp,
                                     fontWeight = FontWeight.Bold
                                 )
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .background(if (isAlpha) ProfitGreenSoft else if (isLeak) LossRedSoft else Navy850)
+                                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                                ) {
+                                    Text(
+                                        text = if (isAlpha) "Edge State" else if (isLeak) "Capital Leak" else "Neutral",
+                                        color = if (isAlpha) ProfitGreenLight else if (isLeak) LossRedLight else TextSecondary,
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
                             }
+
+                            Spacer(modifier = Modifier.height(4.dp))
+
+                            Text(
+                                text = "${item.count} Trades | Win Rate: ${item.winRate}% | Avg: ${TradeAnalyticsCalculator.formatRMultiple(item.avgRMultiple)}",
+                                color = TextSecondary,
+                                fontSize = 11.sp
+                            )
                         }
 
-                        Spacer(modifier = Modifier.height(4.dp))
-
-                        Text(
-                            text = "${item.count} Trades | Win Rate: ${item.winRate}% | Avg: ${TradeAnalyticsCalculator.formatRMultiple(item.avgRMultiple)}",
-                            color = TextSecondary,
-                            fontSize = 11.sp
-                        )
-                    }
-
-                    Column(horizontalAlignment = Alignment.End) {
-                        Text(
-                            text = TradeAnalyticsCalculator.formatCurrency(item.netPnL),
-                            color = if (item.netPnL >= 0) ProfitGreen else LossRed,
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "Avg: ${TradeAnalyticsCalculator.formatCurrency(item.avgPnL)}",
-                            color = TextTertiary,
-                            fontSize = 11.sp
-                        )
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(
+                                text = TradeAnalyticsCalculator.formatCurrency(item.netPnL),
+                                color = if (item.netPnL >= 0) ProfitGreen else LossRed,
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "Avg: ${TradeAnalyticsCalculator.formatCurrency(item.avgPnL)}",
+                                color = TextTertiary,
+                                fontSize = 11.sp
+                            )
+                        }
                     }
                 }
             }
@@ -200,42 +220,62 @@ fun AnalyticsScreen(
             )
         }
 
-        items(setupBreakdown, key = { it.setup }) { item ->
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("setup_card_${item.setup}")
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(CardBackground)
-                    .border(1.dp, CardBorder, RoundedCornerShape(10.dp))
-                    .padding(12.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+        if (setupBreakdown.isEmpty()) {
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(CardBackground)
+                        .border(1.dp, CardBorder, RoundedCornerShape(10.dp))
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Column {
+                    Text(
+                        text = "No playbook setup data logged yet. Assign setups when logging executions.",
+                        color = TextSecondary,
+                        fontSize = 12.sp
+                    )
+                }
+            }
+        } else {
+            items(setupBreakdown, key = { it.setup }) { item ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("setup_card_${item.setup}")
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(CardBackground)
+                        .border(1.dp, CardBorder, RoundedCornerShape(10.dp))
+                        .padding(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column {
+                            Text(
+                                text = item.setup,
+                                color = TextPrimary,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "${item.count} Trades • ${item.winRate}% Win Rate • PF: ${item.profitFactor}",
+                                color = TextSecondary,
+                                fontSize = 11.sp
+                            )
+                        }
+
                         Text(
-                            text = item.setup,
-                            color = TextPrimary,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "${item.count} Trades • ${item.winRate}% Win Rate • PF: ${item.profitFactor}",
-                            color = TextSecondary,
-                            fontSize = 11.sp
+                            text = TradeAnalyticsCalculator.formatCurrency(item.netPnL),
+                            color = if (item.netPnL >= 0) ProfitGreen else LossRed,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold
                         )
                     }
-
-                    Text(
-                        text = TradeAnalyticsCalculator.formatCurrency(item.netPnL),
-                        color = if (item.netPnL >= 0) ProfitGreen else LossRed,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold
-                    )
                 }
             }
         }

@@ -26,10 +26,18 @@ fun AppTopBar(
     currentTitle: String,
     accounts: List<String>,
     selectedAccount: String,
+    userProfile: com.example.tradepulse.data.model.UserProfile? = null,
+    isAutoSyncActive: Boolean = false,
     onSelectAccount: (String) -> Unit,
+    onRemoveAccount: (String) -> Unit,
+    onAddAccountClick: () -> Unit,
     onSyncClick: () -> Unit,
     onThemeClick: () -> Unit,
-    onAddTradeClick: () -> Unit
+    onProfileClick: () -> Unit = {},
+    onGoogleDriveClick: () -> Unit = {},
+    onUserMenuClick: () -> Unit = {},
+    onAddTradeClick: () -> Unit,
+    onCleanDataClick: () -> Unit = {}
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -53,19 +61,48 @@ fun AppTopBar(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Box(
+                    // 3 Vertical Lines in Cube Shape for User Menu
+                    Surface(
+                        onClick = onUserMenuClick,
                         modifier = Modifier
-                            .size(36.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(BrandIndigo),
-                        contentAlignment = Alignment.Center
+                            .testTag("cube_user_menu_button")
+                            .size(38.dp),
+                        shape = RoundedCornerShape(9.dp),
+                        color = if (userProfile != null) (if (userProfile.authProvider == "GOOGLE") Color(0xFF4285F4) else BrandIndigo) else BrandIndigo,
+                        border = BorderStroke(1.dp, CardBorder)
                     ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.TrendingUp,
-                            contentDescription = "TradePulse Logo",
-                            tint = Color.White,
-                            modifier = Modifier.size(22.dp)
-                        )
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(
+                                modifier = Modifier.size(16.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .width(2.5.dp)
+                                        .height(14.dp)
+                                        .clip(RoundedCornerShape(1.dp))
+                                        .background(Color.White)
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .width(2.5.dp)
+                                        .height(14.dp)
+                                        .clip(RoundedCornerShape(1.dp))
+                                        .background(ElectricCyan)
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .width(2.5.dp)
+                                        .height(14.dp)
+                                        .clip(RoundedCornerShape(1.dp))
+                                        .background(Color.White)
+                                )
+                            }
+                        }
                     }
 
                     Column {
@@ -89,12 +126,56 @@ fun AppTopBar(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
+                    // Google Drive Cloud Save Button
+                    IconButton(
+                        onClick = onGoogleDriveClick,
+                        modifier = Modifier
+                            .testTag("top_bar_drive_button")
+                            .size(36.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Navy850)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CloudSync,
+                            contentDescription = "Google Drive Cloud Save",
+                            tint = if (userProfile?.isDriveSyncEnabled == true) Color(0xFF4285F4) else TextSecondary,
+                            modifier = Modifier.size(19.dp)
+                        )
+                    }
+
+                    // Broker Auto-Sync Button
+                    IconButton(
+                        onClick = onSyncClick,
+                        modifier = Modifier
+                            .testTag("top_bar_sync_button")
+                            .size(36.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Navy850)
+                    ) {
+                        Box(contentAlignment = Alignment.TopEnd) {
+                            Icon(
+                                imageVector = Icons.Default.Sync,
+                                contentDescription = "Broker Auto-Sync",
+                                tint = if (isAutoSyncActive) ProfitGreenLight else TextSecondary,
+                                modifier = Modifier.size(19.dp)
+                            )
+                            if (isAutoSyncActive) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(6.dp)
+                                        .clip(androidx.compose.foundation.shape.CircleShape)
+                                        .background(ProfitGreen)
+                                )
+                            }
+                        }
+                    }
+
                     // Theme Switcher Button
                     IconButton(
                         onClick = onThemeClick,
                         modifier = Modifier
                             .testTag("top_bar_theme_button")
-                            .size(38.dp)
+                            .size(36.dp)
                             .clip(RoundedCornerShape(8.dp))
                             .background(Navy850)
                     ) {
@@ -102,47 +183,56 @@ fun AppTopBar(
                             imageVector = Icons.Default.Palette,
                             contentDescription = "Theme Options",
                             tint = ElectricCyan,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(19.dp)
                         )
                     }
 
-                    // Broker Sync Button
+                    // User Profile / Sign In Button
                     IconButton(
-                        onClick = onSyncClick,
+                        onClick = onProfileClick,
                         modifier = Modifier
-                            .testTag("top_bar_sync_button")
-                            .size(38.dp)
+                            .testTag("top_bar_profile_button")
+                            .size(36.dp)
                             .clip(RoundedCornerShape(8.dp))
-                            .background(Navy850)
+                            .background(if (userProfile != null) (if (userProfile.authProvider == "GOOGLE") Color(0xFF4285F4) else BrandIndigo) else Navy850)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Sync,
-                            contentDescription = "Sync Broker",
-                            tint = TextSecondary,
-                            modifier = Modifier.size(20.dp)
-                        )
+                        if (userProfile != null) {
+                            Text(
+                                text = userProfile.displayName.take(2).uppercase(),
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.AccountCircle,
+                                contentDescription = "Sign In / Sign Up",
+                                tint = ElectricCyan,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
                     }
 
                     FilledTonalButton(
                         onClick = onAddTradeClick,
                         modifier = Modifier
                             .testTag("top_bar_add_trade_button")
-                            .height(38.dp),
+                            .height(36.dp),
                         colors = ButtonDefaults.filledTonalButtonColors(
                             containerColor = BrandIndigo,
                             contentColor = Color.White
                         ),
                         shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(horizontal = 12.dp)
+                        contentPadding = PaddingValues(horizontal = 10.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Add,
                             contentDescription = "Add Trade",
                             modifier = Modifier.size(16.dp)
                         )
-                        Spacer(modifier = Modifier.width(4.dp))
+                        Spacer(modifier = Modifier.width(3.dp))
                         Text(
-                            text = "Log Trade",
+                            text = "Log",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -197,7 +287,9 @@ fun AppTopBar(
                     DropdownMenu(
                         expanded = expanded,
                         onDismissRequest = { expanded = false },
-                        modifier = Modifier.background(Navy850)
+                        modifier = Modifier
+                            .background(Navy850)
+                            .widthIn(min = 220.dp)
                     ) {
                         DropdownMenuItem(
                             text = { Text("All Accounts", color = TextPrimary, fontSize = 13.sp) },
@@ -208,13 +300,197 @@ fun AppTopBar(
                         )
                         accounts.forEach { acc ->
                             DropdownMenuItem(
-                                text = { Text(acc, color = TextPrimary, fontSize = 13.sp) },
+                                text = {
+                                    Text(
+                                        text = acc,
+                                        color = if (acc == selectedAccount) ElectricCyan else TextPrimary,
+                                        fontSize = 13.sp,
+                                        fontWeight = if (acc == selectedAccount) FontWeight.Bold else FontWeight.Normal
+                                    )
+                                },
+                                trailingIcon = {
+                                    IconButton(
+                                        onClick = {
+                                            expanded = false
+                                            onRemoveAccount(acc)
+                                        },
+                                        modifier = Modifier
+                                            .size(28.dp)
+                                            .testTag("delete_account_item_${acc}")
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.DeleteOutline,
+                                            contentDescription = "Delete $acc",
+                                            tint = LossRedLight,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                },
                                 onClick = {
                                     onSelectAccount(acc)
                                     expanded = false
                                 }
                             )
                         }
+
+                        HorizontalDivider(color = CardBorder, modifier = Modifier.padding(vertical = 4.dp))
+
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    text = "+ Add New Account",
+                                    color = ElectricCyan,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = null,
+                                    tint = ElectricCyan,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            },
+                            onClick = {
+                                expanded = false
+                                onAddAccountClick()
+                            }
+                        )
+
+                        HorizontalDivider(color = CardBorder, modifier = Modifier.padding(vertical = 4.dp))
+
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    text = "Google Drive Cloud Save",
+                                    color = ElectricCyan,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.CloudSync,
+                                    contentDescription = null,
+                                    tint = ElectricCyan,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            },
+                            onClick = {
+                                expanded = false
+                                onGoogleDriveClick()
+                            }
+                        )
+
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    text = if (userProfile != null) "Account Profile (${userProfile.displayName})" else "Sign In / Sign Up",
+                                    color = TextPrimary,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.AccountCircle,
+                                    contentDescription = null,
+                                    tint = TextSecondary,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            },
+                            onClick = {
+                                expanded = false
+                                onProfileClick()
+                            }
+                        )
+
+                        HorizontalDivider(color = CardBorder, modifier = Modifier.padding(vertical = 4.dp))
+
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    text = "Clean Workspace Data",
+                                    color = LossRedLight,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.CleaningServices,
+                                    contentDescription = null,
+                                    tint = LossRedLight,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            },
+                            modifier = Modifier.testTag("menu_clean_workspace_data"),
+                            onClick = {
+                                expanded = false
+                                onCleanDataClick()
+                            }
+                        )
+                    }
+                }
+
+                // Dedicated Remove Button for the Selected Account
+                if (selectedAccount != "ALL") {
+                    Surface(
+                        color = LossRedSoft,
+                        shape = RoundedCornerShape(6.dp),
+                        border = BorderStroke(1.dp, LossRed.copy(alpha = 0.6f)),
+                        modifier = Modifier
+                            .clickable { onRemoveAccount(selectedAccount) }
+                            .testTag("remove_selected_account_button")
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 9.dp, vertical = 6.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.DeleteOutline,
+                                contentDescription = "Remove Account",
+                                tint = LossRedLight,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Remove Account",
+                                color = LossRedLight,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+
+                // Add Account Quick Button
+                Surface(
+                    color = Navy850,
+                    shape = RoundedCornerShape(6.dp),
+                    border = BorderStroke(1.dp, CardBorder),
+                    modifier = Modifier
+                        .clickable { onAddAccountClick() }
+                        .testTag("top_bar_add_account_button")
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Add Account",
+                            tint = TextSecondary,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Text(
+                            text = "Add",
+                            color = TextSecondary,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium
+                        )
                     }
                 }
             }
