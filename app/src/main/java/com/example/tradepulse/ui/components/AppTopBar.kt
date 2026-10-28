@@ -61,7 +61,7 @@ fun AppTopBar(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    // 3 Vertical Lines in Cube Shape for User Menu
+                    // 3 Dots in Cube Shape for User Menu
                     Surface(
                         onClick = onUserMenuClick,
                         modifier = Modifier
@@ -75,30 +75,27 @@ fun AppTopBar(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
                         ) {
-                            Row(
-                                modifier = Modifier.size(16.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
+                            Column(
+                                modifier = Modifier.height(18.dp),
+                                verticalArrangement = Arrangement.SpaceBetween,
+                                horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Box(
                                     modifier = Modifier
-                                        .width(2.5.dp)
-                                        .height(14.dp)
-                                        .clip(RoundedCornerShape(1.dp))
+                                        .size(4.dp)
+                                        .clip(androidx.compose.foundation.shape.CircleShape)
                                         .background(Color.White)
                                 )
                                 Box(
                                     modifier = Modifier
-                                        .width(2.5.dp)
-                                        .height(14.dp)
-                                        .clip(RoundedCornerShape(1.dp))
+                                        .size(4.dp)
+                                        .clip(androidx.compose.foundation.shape.CircleShape)
                                         .background(ElectricCyan)
                                 )
                                 Box(
                                     modifier = Modifier
-                                        .width(2.5.dp)
-                                        .height(14.dp)
-                                        .clip(RoundedCornerShape(1.dp))
+                                        .size(4.dp)
+                                        .clip(androidx.compose.foundation.shape.CircleShape)
                                         .background(Color.White)
                                 )
                             }
@@ -168,23 +165,6 @@ fun AppTopBar(
                                 )
                             }
                         }
-                    }
-
-                    // Theme Switcher Button
-                    IconButton(
-                        onClick = onThemeClick,
-                        modifier = Modifier
-                            .testTag("top_bar_theme_button")
-                            .size(36.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Navy850)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Palette,
-                            contentDescription = "Theme Options",
-                            tint = ElectricCyan,
-                            modifier = Modifier.size(19.dp)
-                        )
                     }
 
                     // User Profile / Sign In Button

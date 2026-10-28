@@ -20,12 +20,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.tradepulse.data.TradeAnalyticsCalculator
 import com.example.tradepulse.data.model.*
+import com.example.tradepulse.ui.components.DailyPnLBarChart
 import com.example.tradepulse.ui.components.StatCard
 import com.example.tradepulse.ui.theme.*
 
 @Composable
 fun AnalyticsScreen(
     stats: AccountStats,
+    trades: List<Trade> = emptyList(),
     emotionalBreakdown: List<EmotionMetric>,
     setupBreakdown: List<SetupMetric>,
     mistakesBreakdown: List<MistakeMetric>,
@@ -94,6 +96,14 @@ fun AnalyticsScreen(
                     modifier = Modifier.weight(1f)
                 )
             }
+        }
+
+        // Section 1B: 30-Day Daily P&L Bar Chart (Canvas API)
+        item {
+            DailyPnLBarChart(
+                trades = trades,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
 
         // Section 2: Emotional Sentiment & Psychological Leak Breakdown

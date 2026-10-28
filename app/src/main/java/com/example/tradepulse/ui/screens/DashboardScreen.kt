@@ -114,6 +114,14 @@ fun DashboardScreen(
             }
         }
 
+        // 30-Day Daily P&L Bar Chart (Canvas API)
+        item {
+            DailyPnLBarChart(
+                trades = trades,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+
         // Equity Curve Chart
         item {
             EquityCurveChart(

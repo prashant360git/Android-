@@ -8,7 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -26,8 +26,15 @@ fun WeeklyReportsScreen(
     report: WeeklyReportData?,
     isGenerating: Boolean,
     onGenerateReport: () -> Unit,
+    aiErrorMessage: String? = null,
+    aiCoachAnswer: String? = null,
+    isAskingCoach: Boolean = false,
+    onAskCoach: (String) -> Unit = {},
+    onDismissError: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    var coachPrompt by remember { mutableStateOf("") }
+
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
@@ -41,17 +48,36 @@ fun WeeklyReportsScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(
+                            text = "WEEKLY PERFORMANCE AUDIT",
+                            color = TextPrimary,
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(BrandIndigo.copy(alpha = 0.25f))
+                                .border(1.dp, ElectricCyan.copy(alpha = 0.45f), RoundedCornerShape(4.dp))
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = "GEMINI AI",
+                                color = ElectricCyan,
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.ExtraBold
+                            )
+                        }
+                    }
                     Text(
-                        text = "WEEKLY PERFORMANCE AUDIT",
-                        color = TextPrimary,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "AI-powered psychological coaching and execution audit",
+                        text = "Powered by Firebase AI Logic & Gemini 3.8 Flash",
                         color = TextSecondary,
-                        fontSize = 12.sp
+                        fontSize = 11.sp
                     )
                 }
 
@@ -79,6 +105,165 @@ fun WeeklyReportsScreen(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text("Run AI Audit", fontSize = 12.sp)
+                    }
+                }
+            }
+        }
+
+        if (aiErrorMessage != null) {
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(LossRedSoft)
+                        .border(1.dp, LossRed.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ErrorOutline,
+                            contentDescription = null,
+                            tint = LossRedLight,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Text(
+                            text = aiErrorMessage,
+                            color = LossRedLight,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                    IconButton(onClick = onDismissError, modifier = Modifier.size(24.dp)) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Dismiss error",
+                            tint = LossRedLight,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        // Interactive Gemini AI Trading Coach Box
+        item {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(CardBackground)
+                    .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
+                    .padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Psychology,
+                        contentDescription = null,
+                        tint = ElectricCyan,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Text(
+                        text = "ASK GEMINI TRADING COACH",
+                        color = TextPrimary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.5.sp
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = coachPrompt,
+                        onValueChange = { coachPrompt = it },
+                        placeholder = {
+                            Text(
+                                "Ask Gemini about your risk, setups, or discipline...",
+                                color = TextTertiary,
+                                fontSize = 12.sp
+                            )
+                        },
+                        singleLine = true,
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("gemini_coach_input"),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary,
+                            focusedBorderColor = ElectricCyan,
+                            unfocusedBorderColor = CardBorder,
+                            focusedContainerColor = Navy950,
+                            unfocusedContainerColor = Navy950
+                        ),
+                        shape = RoundedCornerShape(8.dp)
+                    )
+
+                    Button(
+                        onClick = {
+                            if (coachPrompt.isNotBlank()) {
+                                onAskCoach(coachPrompt)
+                            }
+                        },
+                        enabled = !isAskingCoach && coachPrompt.isNotBlank(),
+                        modifier = Modifier.testTag("gemini_coach_send_button"),
+                        colors = ButtonDefaults.buttonColors(containerColor = ElectricCyan),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 14.dp)
+                    ) {
+                        if (isAskingCoach) {
+                            CircularProgressIndicator(
+                                color = Navy950,
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.Send,
+                                contentDescription = "Ask Gemini",
+                                tint = Navy950,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                }
+
+                if (!aiCoachAnswer.isNullOrBlank()) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Navy850)
+                            .border(1.dp, ElectricCyan.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+                            .padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            text = "GEMINI COACH INSIGHT",
+                            color = ElectricCyan,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.4.sp
+                        )
+                        Text(
+                            text = aiCoachAnswer.replace("**", ""),
+                            color = TextPrimary,
+                            fontSize = 12.sp,
+                            lineHeight = 17.sp
+                        )
                     }
                 }
             }

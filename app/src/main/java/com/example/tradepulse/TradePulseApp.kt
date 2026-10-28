@@ -50,6 +50,9 @@ fun TradePulseApp(
         val backtestTrades by viewModel.backtestTrades.collectAsState()
         val weeklyReport by viewModel.weeklyReport.collectAsState()
         val isGeneratingReport by viewModel.isGeneratingReport.collectAsState()
+        val aiErrorMessage by viewModel.aiErrorMessage.collectAsState()
+        val aiCoachAnswer by viewModel.aiCoachAnswer.collectAsState()
+        val isAskingCoach by viewModel.isAskingCoach.collectAsState()
         val isSyncingBroker by viewModel.isSyncingBroker.collectAsState()
         val brokers by viewModel.brokers.collectAsState()
         val activeDialog by viewModel.activeDialog.collectAsState()
@@ -159,6 +162,7 @@ fun TradePulseApp(
                     Screen.Analytics.route -> {
                         AnalyticsScreen(
                             stats = stats,
+                            trades = trades,
                             emotionalBreakdown = emotionalBreakdown,
                             setupBreakdown = setupBreakdown,
                             mistakesBreakdown = mistakesBreakdown
@@ -184,7 +188,12 @@ fun TradePulseApp(
                         WeeklyReportsScreen(
                             report = weeklyReport,
                             isGenerating = isGeneratingReport,
-                            onGenerateReport = { viewModel.generateWeeklyReport() }
+                            onGenerateReport = { viewModel.generateWeeklyReport() },
+                            aiErrorMessage = aiErrorMessage,
+                            aiCoachAnswer = aiCoachAnswer,
+                            isAskingCoach = isAskingCoach,
+                            onAskCoach = { viewModel.askGeminiCoach(it) },
+                            onDismissError = { viewModel.clearAiError() }
                         )
                     }
                 }

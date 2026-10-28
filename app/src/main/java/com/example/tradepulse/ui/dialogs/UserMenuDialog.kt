@@ -63,7 +63,7 @@ fun UserMenuDialog(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        // 3 Vertical Lines in Cube Shape
+                        // 3 Dots in Cube Shape
                         Box(
                             modifier = Modifier
                                 .size(36.dp)
@@ -71,30 +71,27 @@ fun UserMenuDialog(
                                 .background(BrandIndigo),
                             contentAlignment = Alignment.Center
                         ) {
-                            Row(
-                                modifier = Modifier.size(16.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
+                            Column(
+                                modifier = Modifier.height(18.dp),
+                                verticalArrangement = Arrangement.SpaceBetween,
+                                horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Box(
                                     modifier = Modifier
-                                        .width(2.5.dp)
-                                        .height(14.dp)
-                                        .clip(RoundedCornerShape(1.dp))
+                                        .size(4.dp)
+                                        .clip(CircleShape)
                                         .background(Color.White)
                                 )
                                 Box(
                                     modifier = Modifier
-                                        .width(2.5.dp)
-                                        .height(14.dp)
-                                        .clip(RoundedCornerShape(1.dp))
+                                        .size(4.dp)
+                                        .clip(CircleShape)
                                         .background(ElectricCyan)
                                 )
                                 Box(
                                     modifier = Modifier
-                                        .width(2.5.dp)
-                                        .height(14.dp)
-                                        .clip(RoundedCornerShape(1.dp))
+                                        .size(4.dp)
+                                        .clip(CircleShape)
                                         .background(Color.White)
                                 )
                             }

@@ -101,6 +101,16 @@ data class DaySummary(
     val trades: List<Trade>
 )
 
+data class DailyPnLPoint(
+    val date: String,       // YYYY-MM-DD
+    val shortLabel: String, // e.g. "Oct 25" or "10/25"
+    val dayOfMonth: String, // e.g. "25"
+    val netPnL: Double,
+    val tradesCount: Int,
+    val winCount: Int,
+    val lossCount: Int
+)
+
 data class AccountStats(
     val netPnL: Double = 0.0,
     val grossProfit: Double = 0.0,

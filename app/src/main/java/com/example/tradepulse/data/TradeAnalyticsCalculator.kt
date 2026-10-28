@@ -199,6 +199,43 @@ object TradeAnalyticsCalculator {
         }.sortedByDescending { it.date }
     }
 
+    fun getLast30DaysPnL(trades: List<Trade>): List<DailyPnLPoint> {
+        val byDate = trades.groupBy { it.entryDate.take(10) }
+        val isoFormatter = java.text.SimpleDateFormat("yyyy-MM-dd", Locale.US)
+        val shortFormatter = java.text.SimpleDateFormat("MMM d", Locale.US)
+        val dayNumFormatter = java.text.SimpleDateFormat("dd", Locale.US)
+
+        // Anchor to either the most recent trade date or today so both historical and live sessions plot accurately
+        val latestDateStr = byDate.keys.maxOrNull()
+        val anchorDate = if (latestDateStr != null) {
+            runCatching { isoFormatter.parse(latestDateStr) }.getOrNull() ?: java.util.Date()
+        } else {
+            java.util.Date()
+        }
+
+        val cal = java.util.Calendar.getInstance()
+        return (29 downTo 0).map { daysAgo ->
+            cal.time = anchorDate
+            cal.add(java.util.Calendar.DAY_OF_YEAR, -daysAgo)
+            val dateObj = cal.time
+            val dateKey = isoFormatter.format(dateObj)
+            val dayTrades = byDate[dateKey].orEmpty()
+            val net = round2(dayTrades.sumOf { it.netPnL })
+            val wins = dayTrades.count { it.netPnL > 0 }
+            val losses = dayTrades.count { it.netPnL < 0 }
+
+            DailyPnLPoint(
+                date = dateKey,
+                shortLabel = shortFormatter.format(dateObj),
+                dayOfMonth = dayNumFormatter.format(dateObj),
+                netPnL = net,
+                tradesCount = dayTrades.size,
+                winCount = wins,
+                lossCount = losses
+            )
+        }
+    }
+
     fun formatCurrency(amount: Double): String {
         val format = NumberFormat.getCurrencyInstance(Locale.US)
         return format.format(amount)

@@ -8,9 +8,14 @@ import com.example.tradepulse.data.TradeAnalyticsCalculator
 import com.example.tradepulse.data.model.*
 import com.example.tradepulse.data.storage.TradePulseStorage
 import com.example.tradepulse.ui.theme.AppThemeMode
+import com.google.firebase.Firebase
+import com.google.firebase.ai.ai
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -92,8 +97,21 @@ class TradePulseViewModel(application: Application) : AndroidViewModel(applicati
     private val _activeDialog = MutableStateFlow<AppDialog?>(null)
     val activeDialog: StateFlow<AppDialog?> = _activeDialog.asStateFlow()
 
+    private val generativeModel by lazy {
+        Firebase.ai.generativeModel("gemini-3.8-flash")
+    }
+
     private val _isGeneratingReport = MutableStateFlow(false)
     val isGeneratingReport: StateFlow<Boolean> = _isGeneratingReport.asStateFlow()
+
+    private val _aiErrorMessage = MutableStateFlow<String?>(null)
+    val aiErrorMessage: StateFlow<String?> = _aiErrorMessage.asStateFlow()
+
+    private val _aiCoachAnswer = MutableStateFlow<String?>(null)
+    val aiCoachAnswer: StateFlow<String?> = _aiCoachAnswer.asStateFlow()
+
+    private val _isAskingCoach = MutableStateFlow(false)
+    val isAskingCoach: StateFlow<Boolean> = _isAskingCoach.asStateFlow()
 
     private val _isSyncingBroker = MutableStateFlow(false)
     val isSyncingBroker: StateFlow<Boolean> = _isSyncingBroker.asStateFlow()
@@ -611,104 +629,171 @@ class TradePulseViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
+    fun clearAiError() {
+        _aiErrorMessage.value = null
+    }
+
+    fun askGeminiCoach(question: String) {
+        val cleanQuestion = question.trim()
+        if (cleanQuestion.isBlank()) return
+
+        viewModelScope.launch {
+            _isAskingCoach.value = true
+            _aiErrorMessage.value = null
+            _aiCoachAnswer.value = ""
+
+            val currentStats = stats.value
+            val recentSummary = filteredTrades.value.take(10).joinToString("\n") { t ->
+                "- ${t.symbol} (${t.side}): Net P&L $${t.netPnL}, Setup: ${t.setup}, Pre-Emotion: ${t.preEmotion}, Post-Emotion: ${t.postEmotion}, Followed Plan: ${t.followedPlan}"
+            }.ifBlank { "No trades logged yet in the current workspace." }
+
+            val prompt = """
+                You are an elite institutional trading performance & psychology coach inside the TradePulse app.
+                Current Account KPIs (${_selectedAccount.value}):
+                - Net P&L: ${TradeAnalyticsCalculator.formatCurrency(currentStats.netPnL)}
+                - Total Trades: ${currentStats.totalTrades} (Win Rate: ${currentStats.winRate}%, Profit Factor: ${currentStats.profitFactor})
+                - Expectancy: ${TradeAnalyticsCalculator.formatCurrency(currentStats.expectancy)} | Max Drawdown: ${TradeAnalyticsCalculator.formatCurrency(currentStats.maxDrawdown)}
+                - Discipline Score: ${currentStats.disciplineAvg}/5 (${currentStats.followedPlanRate}% plan adherence)
+
+                Recent Trade Executions:
+                $recentSummary
+
+                Trader's Question: "$cleanQuestion"
+
+                Provide a sharp, actionable, institutional-grade coaching response in concise Markdown (use bullet points and bold key metrics).
+            """.trimIndent()
+
+            try {
+                withTimeout(60_000L) {
+                    var accumulated = ""
+                    generativeModel.generateContentStream(prompt).collect { chunk ->
+                        chunk.text?.let { part ->
+                            accumulated += part
+                            _aiCoachAnswer.value = accumulated
+                        }
+                    }
+                }
+            } catch (e: TimeoutCancellationException) {
+                _aiErrorMessage.value = "Gemini request timed out. Please try again."
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _aiErrorMessage.value = "Gemini API error: ${e.localizedMessage ?: "Failed to reach Gemini API."}"
+            } finally {
+                _isAskingCoach.value = false
+            }
+        }
+    }
+
     fun generateWeeklyReport() {
         viewModelScope.launch {
             _isGeneratingReport.value = true
-            delay(1500) // simulation of Gemini institutional audit analysis
+            _aiErrorMessage.value = null
 
             val currentStats = stats.value
-            if (currentStats.totalTrades == 0) {
-                _weeklyReport.value = WeeklyReportData(
-                    id = "report-baseline-${System.currentTimeMillis()}",
-                    weekLabel = "Current Session",
-                    startDate = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date()),
-                    endDate = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date()),
-                    stats = currentStats,
-                    aiReport = """
-                        ### Baseline Account Audit & System Ready
-                        **System Status: Clean Workspace Ready for Live Executions**
-
-                        TradePulse is primed to track your trading edge, emotional sentiment, and risk expectancy. No trade executions are currently recorded in the workspace.
-
-                        ---
-
-                        ### Protocol to Build Your Trading Edge:
-                        1. **Log Your Trades**: Tap the **+** button or navigate to **Trades** to record entry, exit, position size, and emotional mindset.
-                        2. **Sync Brokerage**: Use the **Broker Sync** button in the top bar to pull trade executions from Interactive Brokers, Tradovate, NinjaTrader, or Binance.
-                        3. **Align Playbooks**: Ensure every execution matches one of your defined strategy rules (ORB, VWAP Reclaim, SMC Liquidity Sweeps).
-                        4. **Trigger AI Audit**: Once you log executions, re-run this audit for institutional-grade feedback on discipline leaks and win rates.
-                    """.trimIndent(),
-                    generatedAt = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).format(Date()),
-                    keyTakeaways = listOf(
-                        "Clean workspace ready for executions",
-                        "Define max risk per trade (1R)",
-                        "Tag pre & post trade emotional states"
-                    ),
-                    grade = "N/A"
-                )
-                _isGeneratingReport.value = false
-                return@launch
-            }
+            val currentTrades = filteredTrades.value
+            val emotions = emotionalBreakdown.value
+            val setups = setupBreakdown.value
+            val mistakes = mistakesBreakdown.value
 
             val grade = when {
+                currentStats.totalTrades == 0 -> "N/A"
                 currentStats.winRate >= 65 && currentStats.netPnL > 0 -> "A-"
                 currentStats.winRate >= 50 && currentStats.netPnL > 0 -> "B+"
                 currentStats.netPnL > 0 -> "B-"
                 else -> "C+"
             }
 
-            val reportContent = buildString {
-                appendLine("### Executive Summary & Performance Rating")
-                appendLine("**Weekly Grade: $grade (High Technical Edge, Controlled Psychological Variance)**")
-                appendLine()
-                appendLine("The execution cycle produced net **${TradeAnalyticsCalculator.formatCurrency(currentStats.netPnL)}** across **${currentStats.totalTrades} executed orders** with a **${currentStats.winRate}% win rate** and **${currentStats.profitFactor} Profit Factor**.")
-                appendLine("Technical edge in momentum continuation and pullback retests was sharp, while emotional leaks primarily stemmed from mid-day impulsive sizing and premature profit-taking.")
-                appendLine()
-                appendLine("---")
-                appendLine()
-                appendLine("### 1. Psychological & Emotional Leak Analysis")
-                appendLine("* **Calm & Patient Setups**: When entering in a **CALM** or **PATIENT** mental state, your win rate reached **74%**, capturing an average **+2.4R multiple**.")
-                appendLine("* **Cost of Impulsive / FOMO Entries**: Trades taken in a state of **FOMO** or **ANXIETY** yielded an estimated capital drag of **-$1,280.00**.")
-                appendLine("* **Revenge Trading Circuit**: Quick re-entries following stop-outs incurred excessive slippage.")
-                appendLine()
-                appendLine("---")
-                appendLine()
-                appendLine("### 2. Technical Playbook & Strategy Audit")
-                appendLine("* **Top Alpha Strategy**: *Opening Drive Breakout* and *VWAP Pullback* proved most profitable, generating over **80% of total weekly gross profit**.")
-                appendLine("* **Low Expectancy Strategy**: *Counter-Trend Dip Buys* suffered in high-trend market regimes.")
-                appendLine()
-                appendLine("---")
-                appendLine()
-                appendLine("### 3. Top 3 Recurring Behavioral Mistakes")
-                appendLine("1. **Chasing Extended Candles**: Entering near highs without waiting for pullback to value.")
-                appendLine("2. **Moving Stop Losses**: Turning 1R planned losses into larger drawdowns.")
-                appendLine("3. **Lunch Lull Chop Overtrading**: Executions between 11:30 AM and 1:30 PM EST.")
-                appendLine()
-                appendLine("---")
-                appendLine()
-                appendLine("### 4. Non-Negotiable Tactical Protocol for Next Week")
-                appendLine("1. **Enforce the 2-Loss Daily Stop**: If two consecutive trades stop out, mandatory 45-minute pause.")
-                appendLine("2. **Pre-Trade Emotional Audit**: 10-second check-in before entering. If FOMO or Frustrated, cut size by 50% or cancel.")
-                appendLine("3. **Focus on A+ Setups Only**: Prioritize Opening Range Breakouts and VWAP Pullbacks during peak session volume.")
+            val tradesSummary = currentTrades.take(15).joinToString("\n") { t ->
+                "- ${t.entryDate.take(10)} ${t.symbol} ${t.side}: NetPnL=${TradeAnalyticsCalculator.formatCurrency(t.netPnL)}, R=${t.rMultiple}R, Setup='${t.setup}', PreEmotion=${t.preEmotion}, PostEmotion=${t.postEmotion}, Discipline=${t.disciplineScore}/5, Mistakes=${t.mistakes}"
+            }.ifBlank { "No trades recorded yet." }
+
+            val emotionSummary = emotions.joinToString(", ") { "${it.emotion}: ${it.count} trades (${it.winRate}% WR, ${TradeAnalyticsCalculator.formatCurrency(it.netPnL)})" }
+            val setupSummary = setups.joinToString(", ") { "${it.setup}: ${it.count} trades (${it.winRate}% WR, PF ${it.profitFactor}, ${TradeAnalyticsCalculator.formatCurrency(it.netPnL)})" }
+            val mistakeSummary = mistakes.joinToString(", ") { "${it.mistake}: ${it.count}x (-${TradeAnalyticsCalculator.formatCurrency(it.totalLostPnL)})" }
+
+            val prompt = """
+                You are the TradePulse Institutional AI Trading Auditor powered by Gemini.
+                Perform a comprehensive Weekly Performance & Psychological Audit for account '${_selectedAccount.value}'.
+
+                Account Metrics:
+                - Total Trades: ${currentStats.totalTrades}
+                - Net P&L: ${TradeAnalyticsCalculator.formatCurrency(currentStats.netPnL)} (Gross Profit: ${TradeAnalyticsCalculator.formatCurrency(currentStats.grossProfit)}, Gross Loss: -${TradeAnalyticsCalculator.formatCurrency(currentStats.grossLoss)})
+                - Win Rate: ${currentStats.winRate}% (${currentStats.winningTrades}W / ${currentStats.losingTrades}L)
+                - Profit Factor: ${currentStats.profitFactor} | Expectancy: ${TradeAnalyticsCalculator.formatCurrency(currentStats.expectancy)}
+                - Max Drawdown: -${TradeAnalyticsCalculator.formatCurrency(currentStats.maxDrawdown)}
+                - Discipline Score: ${currentStats.disciplineAvg}/5 (${currentStats.followedPlanRate}% followed plan)
+                - Assigned Weekly Grade: $grade
+
+                Emotional Breakdown: ${emotionSummary.ifBlank { "None" }}
+                Strategy Setup Breakdown: ${setupSummary.ifBlank { "None" }}
+                Behavioral Mistakes: ${mistakeSummary.ifBlank { "None" }}
+
+                Recent Executions:
+                $tradesSummary
+
+                Format your response using clean Markdown with these exact section headers:
+                ### Executive Summary & Performance Rating
+                **Weekly Grade: $grade**
+                (2-3 sentences analyzing overall edge, expectancy, and risk control, or onboarding guidance if 0 trades)
+                ---
+                ### 1. Psychological & Emotional Leak Analysis
+                * Bullet points on emotional states and mindset impact
+                ---
+                ### 2. Technical Playbook & Strategy Audit
+                * Bullet points on best and worst setups
+                ---
+                ### 3. Top 3 Actionable Protocol Rules for Next Session
+                1. First rule
+                2. Second rule
+                3. Third rule
+            """.trimIndent()
+
+            val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
+            val takeaways = if (currentStats.totalTrades == 0) {
+                listOf(
+                    "Powered by Gemini 3.8 Flash Live Analysis",
+                    "Define max risk per trade (1R) before entry",
+                    "Tag pre & post trade emotional states"
+                )
+            } else {
+                listOf(
+                    "Net P&L ${TradeAnalyticsCalculator.formatCurrency(currentStats.netPnL)} across ${currentStats.totalTrades} trades",
+                    "Win rate ${currentStats.winRate}% • Profit Factor ${currentStats.profitFactor}",
+                    "Plan adherence: ${currentStats.followedPlanRate}% (${currentStats.disciplineAvg}/5 discipline)"
+                )
             }
 
-            _weeklyReport.value = WeeklyReportData(
-                id = "report-${System.currentTimeMillis()}",
-                weekLabel = "October 19 - 25, 2026",
-                startDate = "2026-10-19",
-                endDate = "2026-10-25",
-                stats = currentStats,
-                aiReport = reportContent,
-                generatedAt = "2026-10-25T11:00:00Z",
-                keyTakeaways = listOf(
-                    "Calm execution yielded +2.4R average win",
-                    "Eliminating FOMO entries saves ~$1,280/wk",
-                    "Opening Range Breakout remains #1 edge"
-                ),
-                grade = grade
-            )
+            try {
+                val aiGeneratedText = withTimeout(60_000L) {
+                    val response = generativeModel.generateContent(prompt)
+                    response.text ?: ""
+                }
 
-            _isGeneratingReport.value = false
+                if (aiGeneratedText.isNotBlank()) {
+                    _weeklyReport.value = WeeklyReportData(
+                        id = "report-gemini-${System.currentTimeMillis()}",
+                        weekLabel = "Gemini AI Live Audit • $todayStr",
+                        startDate = todayStr,
+                        endDate = todayStr,
+                        stats = currentStats,
+                        aiReport = aiGeneratedText.trim(),
+                        generatedAt = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).format(Date()),
+                        keyTakeaways = takeaways,
+                        grade = grade
+                    )
+                } else {
+                    _aiErrorMessage.value = "Gemini returned an empty response. Please try again."
+                }
+            } catch (e: TimeoutCancellationException) {
+                _aiErrorMessage.value = "Gemini audit timed out after 60s. Please retry."
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _aiErrorMessage.value = "Gemini API error: ${e.localizedMessage ?: "Unable to complete AI audit."}"
+            } finally {
+                _isGeneratingReport.value = false
+            }
         }
     }
 
